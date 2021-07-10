@@ -1,5 +1,5 @@
 import pandas as pd
-import os
+import os, tqdm
 from typing import List, Tuple
 import numpy as np
 import numpy as np
@@ -113,7 +113,7 @@ def recall_at_m(test_data_mat, prediction_mat, M=50) -> float:
     user_corrects = [0 for _ in range(test_data_mat.shape[0])]
     user_recall = [0 for _ in range(test_data_mat.shape[0])]
     non_zero_users = 0
-    for user in tqdm(range(0, test_data_mat.shape[0])):
+    for user in range(0, test_data_mat.shape[0]):
         user_likes[user] = sum(test_data_mat[user])
         ranked = sorted(
             enumerate(prediction_mat[user]), key=lambda x: x[1], reverse=True
@@ -148,7 +148,7 @@ class CDL():
         self.lambda_v = 10
 
         self.drop_ratio = 0.1
-        self.learning_rate = 0.01
+        self.learning_rate = 0.05
         self.epochs = 1
         self.batch_size = 256
 
@@ -243,9 +243,12 @@ class CDL():
         batch_size = tf.cast(tf.shape(self.X_0)[0], tf.int32)
 
         self.V = tf.Variable(tf.zeros(shape=[self.num_v, self.k], dtype=tf.float32))
+        self.V_ = tf.Variable(tf.zeros(shape=[self.num_v_, self.k], dtype=tf.float32))
         self.U = tf.Variable(tf.zeros(shape=[self.num_u, self.k], dtype=tf.float32))
 
         batch_V = tf.reshape(tf.gather(self.V, self.model_batch_data_idx), shape=[batch_size, self.k])
+        batch_V_ = tf.reshape(tf.gather(self.V_, self.model_batch_data_idx), shape=[batch_size, self.k])
+
 
         loss_1 = self.lambda_u * tf.nn.l2_loss(self.U)
         loss_2 = self.lambda_w * 1 / 2 * tf.reduce_sum(
@@ -260,66 +263,91 @@ class CDL():
         self.loss = loss_1 + loss_2 + loss_3 + loss_4 + loss_5
         self.optimizer = tf.train.AdamOptimizer(self.learning_rate).minimize(self.loss)
 
-    def train_model(self):
-        self.sess = tf.Session()
-        self.sess.run(tf.global_variables_initializer())
-
+    def train_model(self, itr):
         start_time = time.time()
-
+        total_batch = int(self.num_v / float(self.batch_size)) + 1
         ## Randomize the order of datapoints
         random_idx = np.random.permutation(self.num_v)
 
         ## Add NOISE
         self.item_infomation_matrix_noise = add_noise(self.item_infomation_matrix, 0.3)
 
-        for epoch in range(self.epochs):
-            batch_cost = 0
-            for i in range(0, self.item_infomation_matrix.shape[0], self.batch_size):
-                batch_idx = random_idx[i:i + self.batch_size]
-                _, loss = self.sess.run([self.optimizer, self.loss],
-                                        feed_dict={self.X_0: self.item_infomation_matrix_noise[batch_idx, :],
-                                                   self.X_c: self.item_infomation_matrix[batch_idx, :],
-                                                   self.R: self.rating_matrix[:, batch_idx],
-                                                   self.C: self.confidence[:, batch_idx],
-                                                   self.drop_ratio: 0.1,
-                                                   self.model_batch_data_idx: batch_idx})
-                batch_cost = batch_cost + loss
+        print("ENTERING THE TRAINING LOOP...................................................")
 
-            print ("Training //", "Epoch %d //" % (epoch + 1), " Total cost = {:.2f}".format(batch_cost),
-                   "Elapsed time : %d sec" % (time.time() - start_time))
+        batch_cost = 0
+        for i in range(total_batch):
+            if i == total_batch - 1:
+                batch_idx = random_idx[i * self.batch_size:]
+            elif i < total_batch - 1:
+                batch_idx = random_idx[i * self.batch_size : (i+1) * self.batch_size]
 
-        return self.sess.run((tf.matmul(self.U, self.V, transpose_b=True)))
+            _, loss = self.sess.run([self.optimizer, self.loss],
+                                    feed_dict={self.X_0: self.item_infomation_matrix_noise[batch_idx, :],
+                                               self.X_c: self.item_infomation_matrix[batch_idx, :],
+                                               self.R: self.rating_matrix[:, batch_idx],
+                                               self.C: self.confidence[:, batch_idx],
+                                               self.drop_ratio: 0.1,
+                                               self.model_batch_data_idx: batch_idx})
+            batch_cost = batch_cost + loss
+
+        print ("Training //", "Epoch %d //" % (itr + 1), " Total cost = {:.2f}".format(batch_cost),
+               "Elapsed time : %d sec" % (time.time() - start_time))
+
 
     def test_model(self):
-        self.sess = tf.Session()
-        self.sess.run(tf.global_variables_initializer())
 
-        start_time = time.time()
+        total_batch = int(self.num_v_ / float(self.batch_size)) + 1
 
-        random_idx = np.random.permutation(self.num_v_)
+        ## Randomize the order of datapoints
+        # random_idx = np.random.permutation(self.num_v_)
+        random_idx = list(range(0, self.num_v_))
 
+        ## Add NOISE
         self.item_infomation_matrix_noise = add_noise(self.item_infomation_matrix, 0.3)
 
-        total_op = np.zeros((self.num_u, self.num_v_))
-        for i in range(0, self.item_infomation_matrix.shape[0], self.batch_size):
-            batch_idx = random_idx[i:i + self.batch_size]
-            op = self.sess.run([self.sdae_output],
+
+        batch_cost = 0
+        for i in range(total_batch):
+            if i == total_batch - 1:
+                batch_idx = random_idx[i * self.batch_size:]
+            elif i < total_batch - 1:
+                batch_idx = random_idx[i * self.batch_size: (i + 1) * self.batch_size]
+
+            _, loss = self.sess.run([self.optimizer, self.loss],
                                     feed_dict={self.X_0: self.item_infomation_matrix_noise[batch_idx, :],
                                                self.X_c: self.item_infomation_matrix[batch_idx, :],
                                                self.R: self.rating_matrix_test[:, batch_idx],
                                                self.C: self.confidence_test[:, batch_idx],
                                                self.drop_ratio: 0.1,
                                                self.model_batch_data_idx: batch_idx})
-            print(op.shape)
-            break
+            batch_cost = batch_cost + loss
 
-        # print ("Test //",  " Total Loss = {:.2f}".format(batch_cost),
-        #        "Elapsed time : %d sec" % (time.time() - start_time))
+            Estimated_R = (tf.matmul(self.U, self.V_, transpose_b=True)).eval(session= self.sess)
+            self.Estimated_R = Estimated_R.clip(min=0, max=1)
+            return self.Estimated_R
 
-        return self.sess.run((tf.matmul(self.U, self.V, transpose_b=True)))
+
+    def run(self):
+        self.sess = tf.Session()
+        self.build_model()
+        init = tf.global_variables_initializer()
+        self.sess.run(init)
+        for epoch_itr in range(self.epochs):
+            self.train_model(epoch_itr)
+
+
+        return self.test_model()
+
+
 
 R_train = rating_matrix.copy()
 cdl = CDL(R_train, rating_matrix_test, item_infomation_matrix)
-cdl.build_model()
-R = cdl.train_model()
-r_ = cdl.test_model()
+# cdl.build_model()
+R = cdl.run()
+# r_ = cdl.test_model()
+# res = [idx for idx, val in enumerate(R[0]) if val > 0.0]
+# res1 = [idx for idx, val in enumerate(rating_matrix[0]) if val > 0.0]
+#
+# print(R.shape, rating_matrix.shape, res)
+# print(res1)
+print(recall_at_m(rating_matrix, R))
