@@ -64,3 +64,34 @@ Please document how to use your code in this file below. We will use the documen
 
 
 # Candidate Documentation
+Libraries required - 
+* TensorFlow (1.7+) Please do not use TensorFlow 2
+* Numpy, Pandas
+* Pickle, ArgParse, OS
+
+
+### Usage
+The data folder contains the entire dataset required for training the model.
+Run the files 'main.py' for training and testing of the implementation.
+
+*Examples*
+
+
+
+
+### Idea Formulation
+The idea is based on the research paper **Collaborative Deep Learning for Recommender Systems** by Hao Wang. 
+It introduced the Collaborative Deep Learning model based on Hierarchical Bayesian architecture for Recommendation Systems.
+The main deifference between the implementation of the original paper and this model architecture is that the SDAE encoder-decoder structure is not used here.
+A simple 2 layer encoder-decoder is used in this implementation for the purpose of simplicity and time constraints.
+
+For the purpose of time constraint, I am oly taking into account the training data in 'train.dat' and then preparing the article to content matching using
+(article_id -> bag of words of content), the bag f contents representation provided in the dataset.
+
+**Data Dimesnsions**
+
+Train Data -> #Users X #Training_articles
+
+Item Information Data -> #Total_Articles X Vocab_dimension
+
+The evaluation has been performed using the function already rovided to measure the mAP scores. Referring to the research paper, the current implementation achieves comparable mAP50 scores as denoted in the graphs of the paper.

@@ -2,7 +2,6 @@ import pandas as pd
 import os, tqdm
 from typing import List, Tuple
 import numpy as np
-import numpy as np
 import pickle, time
 # import tensorflow as tf
 import tensorflow.compat.v1 as tf
@@ -149,7 +148,7 @@ class CDL():
 
         self.drop_ratio = 0.1
         self.learning_rate = 0.03
-        self.epochs = 500
+        self.epochs = 150
         self.batch_size = 256
 
         self.a = 1
