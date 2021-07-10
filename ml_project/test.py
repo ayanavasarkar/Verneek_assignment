@@ -148,8 +148,8 @@ class CDL():
         self.lambda_v = 10
 
         self.drop_ratio = 0.1
-        self.learning_rate = 0.05
-        self.epochs = 1
+        self.learning_rate = 0.03
+        self.epochs = 500
         self.batch_size = 256
 
         self.a = 1
@@ -272,7 +272,7 @@ class CDL():
         ## Add NOISE
         self.item_infomation_matrix_noise = add_noise(self.item_infomation_matrix, 0.3)
 
-        print("ENTERING THE TRAINING LOOP...................................................")
+        print("ENTERING THE TRAINING LOOP for iteration ",itr,"...................................................")
 
         batch_cost = 0
         for i in range(total_batch):
@@ -294,37 +294,43 @@ class CDL():
                "Elapsed time : %d sec" % (time.time() - start_time))
 
 
-    def test_model(self):
+    # def test_model(self):
+    #
+    #     total_batch = int(self.num_v_ / float(self.batch_size)) + 1
+    #
+    #     ## Randomize the order of datapoints
+    #     # random_idx = np.random.permutation(self.num_v_)
+    #     random_idx = list(range(0, self.num_v_))
+    #
+    #     ## Add NOISE
+    #     self.item_infomation_matrix_noise = add_noise(self.item_infomation_matrix, 0.3)
+    #
+    #
+    #     for i in range(total_batch):
+    #         if i == total_batch - 1:
+    #             batch_idx = random_idx[i * self.batch_size:]
+    #         elif i < total_batch - 1:
+    #             batch_idx = random_idx[i * self.batch_size: (i + 1) * self.batch_size]
+    #
+    #         ## Only run the test loss
+    #         loss = self.sess.run([self.loss],
+    #                                 feed_dict={self.X_0: self.item_infomation_matrix_noise[batch_idx, :],
+    #                                            self.X_c: self.item_infomation_matrix[batch_idx, :],
+    #                                            self.R: self.rating_matrix_test[:, batch_idx],
+    #                                            self.C: self.confidence_test[:, batch_idx],
+    #                                            self.drop_ratio: 0.1,
+    #                                            self.model_batch_data_idx: batch_idx})
+    #         # batch_cost = batch_cost + loss
+    #
+    #         Estimated_R = (tf.matmul(self.U, self.V_, transpose_b=True)).eval(session= self.sess)
+    #         self.Estimated_R = Estimated_R.clip(min=0, max=1)
+    #         return self.Estimated_R
 
-        total_batch = int(self.num_v_ / float(self.batch_size)) + 1
+    def test_model_(self):
 
-        ## Randomize the order of datapoints
-        # random_idx = np.random.permutation(self.num_v_)
-        random_idx = list(range(0, self.num_v_))
-
-        ## Add NOISE
-        self.item_infomation_matrix_noise = add_noise(self.item_infomation_matrix, 0.3)
-
-
-        batch_cost = 0
-        for i in range(total_batch):
-            if i == total_batch - 1:
-                batch_idx = random_idx[i * self.batch_size:]
-            elif i < total_batch - 1:
-                batch_idx = random_idx[i * self.batch_size: (i + 1) * self.batch_size]
-
-            _, loss = self.sess.run([self.optimizer, self.loss],
-                                    feed_dict={self.X_0: self.item_infomation_matrix_noise[batch_idx, :],
-                                               self.X_c: self.item_infomation_matrix[batch_idx, :],
-                                               self.R: self.rating_matrix_test[:, batch_idx],
-                                               self.C: self.confidence_test[:, batch_idx],
-                                               self.drop_ratio: 0.1,
-                                               self.model_batch_data_idx: batch_idx})
-            batch_cost = batch_cost + loss
-
-            Estimated_R = (tf.matmul(self.U, self.V_, transpose_b=True)).eval(session= self.sess)
-            self.Estimated_R = Estimated_R.clip(min=0, max=1)
-            return self.Estimated_R
+        Estimated_R = (tf.matmul(self.U, self.V_, transpose_b=True)).eval(session= self.sess)
+        self.Estimated_R = Estimated_R.clip(min=0, max=1)
+        return self.Estimated_R
 
 
     def run(self):
@@ -336,7 +342,7 @@ class CDL():
             self.train_model(epoch_itr)
 
 
-        return self.test_model()
+        return self.test_model_()
 
 
 
@@ -348,6 +354,8 @@ R = cdl.run()
 # res = [idx for idx, val in enumerate(R[0]) if val > 0.0]
 # res1 = [idx for idx, val in enumerate(rating_matrix[0]) if val > 0.0]
 #
+# res = R[0]==R_[0]
 # print(R.shape, rating_matrix.shape, res)
-# print(res1)
+# print(len(R), len(R[0]), len(R_), len(R_[0]))
+
 print(recall_at_m(rating_matrix, R))
