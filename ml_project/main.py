@@ -16,7 +16,7 @@ parser = argparse.ArgumentParser(description='Process some integers.')
 
 parser.add_argument('--train_data', type=str, default='data/train_data.dat', help='path to training data')
 parser.add_argument('--test_data', type=str, default='data/test_data.dat',help='path to test data')
-parser.add_argument('--test', type=bool, default=False, help='Test or not')
+parser.add_argument('--test', type=bool, default=True, help='Test or not')
 parser.add_argument('--n_users', type=int, default=5551,help='#Users')
 parser.add_argument('--a_train', type=int, default=13584,help='#Articles train')
 parser.add_argument('--a_test', type=int, default=1584,help='#Articles test/Eval')
@@ -72,12 +72,10 @@ def load_user_article_likes(path,  num_users, num_articles):
 
 if args.test == False:
     rating_matrix = load_user_article_likes(args.train_data, args.n_users, args.a_train)
-    rating_matrix_test = load_user_article_likes(args.train_data, args.n_users, args.a_train)
+    rating_matrix_test = load_user_article_likes(args.train_data, args.n_users, args.a_train)[0:1000]
 else:
     rating_matrix = load_user_article_likes(args.train_data, args.n_users, args.a_train)
     rating_matrix_test = load_user_article_likes(args.test_data, args.n_users, args.a_test)
-
-
 
 def mask(c ,size):
     return np.random.binomial(1, 1 - c, [size[0],size[1]])
@@ -132,6 +130,13 @@ def recall_at_m(test_data_mat, prediction_mat, M=50) -> float:
     total_recall = sum(user_recall) / non_zero_users
     return total_recall
 
+### Following class has been heavily influenced by the official github repo of the paper.
+# The code sources has been taken from the official github repo of the research paper.
+# * https://github.com/js05212/CollaborativeDeepLearning-TensorFlow
+# * https://github.com/gtshs2/Collaborative_Deep_Learning
+# * https://github.com/zoujun123/Keras-CDL
+# * https://github.com/xiaoouzhang/Collaborative-Deep-Learning-for-Recommender-Systems
+# * https://github.com/ChenBoSyun/implement-Collaborative-Deep-Learning-for-Recommender-Systems/blob/master/CDL_tf.ipynb
 
 class CDL():
     def __init__(self, rating_matrix, rating_matrix_test, item_infomation_matrix):
@@ -147,8 +152,8 @@ class CDL():
         self.lambda_v = 10
 
         self.drop_ratio = 0.1
-        self.learning_rate = 0.03
-        self.epochs = 150
+        self.learning_rate = 0.05
+        self.epochs = 10
         self.batch_size = 256
 
         self.a = 1
@@ -271,7 +276,7 @@ class CDL():
         ## Add NOISE
         self.item_infomation_matrix_noise = add_noise(self.item_infomation_matrix, 0.3)
 
-        print("ENTERING THE TRAINING LOOP for iteration ",itr,"...................................................")
+        print("ENTERING THE TRAINING LOOP for EPOCH ",itr,"...................................................")
 
         batch_cost = 0
         for i in range(total_batch):
@@ -293,41 +298,41 @@ class CDL():
                "Elapsed time : %d sec" % (time.time() - start_time))
 
 
-    # def test_model(self):
-    #
-    #     total_batch = int(self.num_v_ / float(self.batch_size)) + 1
-    #
-    #     ## Randomize the order of datapoints
-    #     # random_idx = np.random.permutation(self.num_v_)
-    #     random_idx = list(range(0, self.num_v_))
-    #
-    #     ## Add NOISE
-    #     self.item_infomation_matrix_noise = add_noise(self.item_infomation_matrix, 0.3)
-    #
-    #
-    #     for i in range(total_batch):
-    #         if i == total_batch - 1:
-    #             batch_idx = random_idx[i * self.batch_size:]
-    #         elif i < total_batch - 1:
-    #             batch_idx = random_idx[i * self.batch_size: (i + 1) * self.batch_size]
-    #
-    #         ## Only run the test loss
-    #         loss = self.sess.run([self.loss],
-    #                                 feed_dict={self.X_0: self.item_infomation_matrix_noise[batch_idx, :],
-    #                                            self.X_c: self.item_infomation_matrix[batch_idx, :],
-    #                                            self.R: self.rating_matrix_test[:, batch_idx],
-    #                                            self.C: self.confidence_test[:, batch_idx],
-    #                                            self.drop_ratio: 0.1,
-    #                                            self.model_batch_data_idx: batch_idx})
-    #         # batch_cost = batch_cost + loss
-    #
-    #         Estimated_R = (tf.matmul(self.U, self.V_, transpose_b=True)).eval(session= self.sess)
-    #         self.Estimated_R = Estimated_R.clip(min=0, max=1)
-    #         return self.Estimated_R
+    def test_model(self):
+
+        total_batch = int(self.num_v_ / float(self.batch_size)) + 1
+
+        ## Randomize the order of datapoints
+        # random_idx = np.random.permutation(self.num_v_)
+        random_idx = list(range(0, self.num_v_))
+
+        ## Add NOISE
+        self.item_infomation_matrix_noise = add_noise(self.item_infomation_matrix, 0.3)
+
+
+        for i in range(total_batch):
+            if i == total_batch - 1:
+                batch_idx = random_idx[i * self.batch_size:]
+            elif i < total_batch - 1:
+                batch_idx = random_idx[i * self.batch_size: (i + 1) * self.batch_size]
+
+            ## Only run the test loss
+            loss = self.sess.run([self.loss],
+                                    feed_dict={self.X_0: self.item_infomation_matrix_noise[batch_idx, :],
+                                               self.X_c: self.item_infomation_matrix[batch_idx, :],
+                                               self.R: self.rating_matrix_test[:, batch_idx],
+                                               self.C: self.confidence_test[:, batch_idx],
+                                               self.drop_ratio: 0.1,
+                                               self.model_batch_data_idx: batch_idx})
+            # batch_cost = batch_cost + loss
+
+        Estimated_R = (tf.matmul(self.U, self.V_, transpose_b=True)).eval(session= self.sess)
+        self.Estimated_R = Estimated_R.clip(min=0, max=1)
+        return self.Estimated_R
 
     def test_model_(self):
 
-        Estimated_R = (tf.matmul(self.U, self.V_, transpose_b=True)).eval(session= self.sess)
+        Estimated_R = (tf.matmul(self.U, self.V, transpose_b=True)).eval(session= self.sess)
         self.Estimated_R = Estimated_R.clip(min=0, max=1)
         return self.Estimated_R
 
@@ -346,8 +351,11 @@ class CDL():
 
 
 R_train = rating_matrix.copy()
+## INitialise the model
 cdl = CDL(R_train, rating_matrix_test, item_infomation_matrix)
 # cdl.build_model()
+
+## Train and test the model
 R = cdl.run()
 # r_ = cdl.test_model()
 # res = [idx for idx, val in enumerate(R[0]) if val > 0.0]
@@ -357,4 +365,5 @@ R = cdl.run()
 # print(R.shape, rating_matrix.shape, res)
 # print(len(R), len(R[0]), len(R_), len(R_[0]))
 
-print(recall_at_m(rating_matrix, R))
+## Print the scores
+print("Recall at mAP50 = ", recall_at_m(rating_matrix, R))

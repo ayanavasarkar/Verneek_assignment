@@ -76,16 +76,39 @@ Run the files 'main.py' for training and testing of the implementation.
 
 *Examples*
 
+python main.py --train_data=data/train_data.dat --test_data=data/test_data.dat --test=True --n_users=5551 --a_train=13584 --a_test=1584
+
+*Arguments*
+
+train_data = path to training data
+
+test_data = path to test data
+
+n_users = # Users
 
 
+a_train = Number of articles in train set
 
+a_test = number of articles in test set
+
+Hyper-parameter tuning and exploration has not been possible with the time constrain. Hence, the following parameters has been chosen.
+
+Dropout ratio of 0.1 has been selected.
+
+LR = 0.03
+
+Batch-size = 256
+
+Epochs =50-150
+
+Learning rate has 
 ### Idea Formulation
 The idea is based on the research paper **Collaborative Deep Learning for Recommender Systems** by Hao Wang. 
 It introduced the Collaborative Deep Learning model based on Hierarchical Bayesian architecture for Recommendation Systems.
 The main deifference between the implementation of the original paper and this model architecture is that the SDAE encoder-decoder structure is not used here.
 A simple 2 layer encoder-decoder is used in this implementation for the purpose of simplicity and time constraints.
 
-For the purpose of time constraint, I am oly taking into account the training data in 'train.dat' and then preparing the article to content matching using
+For the purpose of time constraint, I am only taking into account the training data in 'train.dat' and then preparing the article to content matching using
 (article_id -> bag of words of content), the bag f contents representation provided in the dataset.
 
 **Data Dimesnsions**
@@ -95,3 +118,14 @@ Train Data -> #Users X #Training_articles
 Item Information Data -> #Total_Articles X Vocab_dimension
 
 The evaluation has been performed using the function already rovided to measure the mAP scores. Referring to the research paper, the current implementation achieves comparable mAP50 scores as denoted in the graphs of the paper.
+
+
+# REFERENCES
+
+* The idea has been taken from the research paper Collaborative Deep Learning for Recommender Systems by Hao Wang.
+
+The code sources has been taken from the official github repo of the research paper.
+* https://github.com/js05212/CollaborativeDeepLearning-TensorFlow
+* https://github.com/gtshs2/Collaborative_Deep_Learning
+* https://github.com/zoujun123/Keras-CDL
+* https://github.com/xiaoouzhang/Collaborative-Deep-Learning-for-Recommender-Systems
