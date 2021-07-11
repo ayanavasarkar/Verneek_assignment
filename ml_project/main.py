@@ -163,7 +163,7 @@ class CDL():
 
         self.drop_ratio = 0.1
         self.learning_rate = 0.05
-        self.epochs = 50
+        self.epochs = 2
         self.batch_size = 256
 
         self.a = 1
@@ -367,7 +367,7 @@ cdl = CDL(R_train, rating_matrix_test, item_infomation_matrix)
 # cdl.build_model()
 
 ## Train and test the model
-R, R_ = cdl.run()
+R_test, R_tr = cdl.run()
 
 
 # res = [idx for idx, val in enumerate(R[0]) if val > 0.0]
@@ -375,15 +375,12 @@ R, R_ = cdl.run()
 #
 # res = R[0]==R_[0]
 # print(R.shape, rating_matrix.shape, res)
-print(len(R), len(R[0]), len(R_), len(R_[0]), len(rating_matrix_test))
-# for i in res:
-#     if i==False:
-#         print(i)
-## Print the scores
+print(len(R_test), len(R_test[0]), len(rating_matrix_test))
+
 print("Computation of m-recall scores for training data")
 # print("Recall at m-recall for Train Data = ", recall_at_m(rating_matrix, R))
 
 print("\n")
 
 print("Computation of m-recall scores for test data")
-print("Recall at m-recall for Test Data = ", recall_at_m(rating_matrix_test, R_))
+print("Recall at m-recall for Test Data = ", recall_at_m(rating_matrix_test, R_test))
