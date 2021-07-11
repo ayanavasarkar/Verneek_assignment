@@ -72,10 +72,13 @@ def load_user_article_likes(path,  num_users, num_articles):
 
 if args.test == False:
     rating_matrix = load_user_article_likes(args.train_data, args.n_users, args.a_train)
-    rating_matrix_test = load_user_article_likes(args.train_data, args.n_users, args.a_train)[0:1000]
+    rating_matrix_test = load_user_article_likes(args.train_data, args.n_users, args.a_train)[:, 0:1000]
 else:
     rating_matrix = load_user_article_likes(args.train_data, args.n_users, args.a_train)
     rating_matrix_test = load_user_article_likes(args.test_data, args.n_users, args.a_test)
+
+print(len(rating_matrix_test[0]), type(rating_matrix_test[:,0]))
+# exit(0)
 
 def mask(c ,size):
     return np.random.binomial(1, 1 - c, [size[0],size[1]])
@@ -153,7 +156,7 @@ class CDL():
 
         self.drop_ratio = 0.1
         self.learning_rate = 0.05
-        self.epochs = 10
+        self.epochs = 2
         self.batch_size = 256
 
         self.a = 1
@@ -332,9 +335,10 @@ class CDL():
 
     def test_model_(self):
 
+
         Estimated_R = (tf.matmul(self.U, self.V, transpose_b=True)).eval(session= self.sess)
-        self.Estimated_R = Estimated_R.clip(min=0, max=1)
-        return self.Estimated_R
+        self.Estimated_R_ = Estimated_R.clip(min=0, max=1)
+        return self.Estimated_R_
 
 
     def run(self):
@@ -345,8 +349,8 @@ class CDL():
         for epoch_itr in range(self.epochs):
             self.train_model(epoch_itr)
 
-
-        return self.test_model_()
+        print("ENTERING THE TESTING PHASE ON SELECTED DATA....................\n")
+        return (self.test_model(),self.test_model_())
 
 
 
@@ -356,14 +360,21 @@ cdl = CDL(R_train, rating_matrix_test, item_infomation_matrix)
 # cdl.build_model()
 
 ## Train and test the model
-R = cdl.run()
-# r_ = cdl.test_model()
+R, R_ = cdl.run()
+
+
 # res = [idx for idx, val in enumerate(R[0]) if val > 0.0]
 # res1 = [idx for idx, val in enumerate(rating_matrix[0]) if val > 0.0]
 #
 # res = R[0]==R_[0]
 # print(R.shape, rating_matrix.shape, res)
-# print(len(R), len(R[0]), len(R_), len(R_[0]))
-
+print(len(R), len(R[0]), len(R_), len(R_[0]), len(rating_matrix_test))
+# for i in res:
+#     if i==False:
+#         print(i)
 ## Print the scores
-print("Recall at mAP50 = ", recall_at_m(rating_matrix, R))
+print("Computation of m-recall scores for training data \n")
+print("Recall at m-recall for Train Data = ", recall_at_m(rating_matrix, R))
+
+print("Computation of m-recall scores for test data \n")
+print("Recall at m-recall for Test Data = ", recall_at_m(rating_matrix_test, R_))
