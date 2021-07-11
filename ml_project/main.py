@@ -373,8 +373,10 @@ print(len(R), len(R[0]), len(R_), len(R_[0]), len(rating_matrix_test))
 #     if i==False:
 #         print(i)
 ## Print the scores
-print("Computation of m-recall scores for training data \n")
+print("Computation of m-recall scores for training data")
 print("Recall at m-recall for Train Data = ", recall_at_m(rating_matrix, R))
 
-print("Computation of m-recall scores for test data \n")
+print("\n")
+
+print("Computation of m-recall scores for test data")
 print("Recall at m-recall for Test Data = ", recall_at_m(rating_matrix_test, R_))
