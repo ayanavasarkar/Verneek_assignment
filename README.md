@@ -76,7 +76,7 @@ Run the files 'main.py' for training and testing of the implementation.
 
 *Examples*
 
-python main.py --train_data=data/train_data.dat --test_data=data/test_data.dat --test=True --n_users=5551 --a_train=13584 --a_test=1584
+python main.py --train_data=data/train_data.dat --test_data=data/test_data.dat --test=True --n_users=5551 --a_train=13584 --a_test=1584 --lr=0.001 --dr=0.1 --epoch=100 --bs=256
 
 *Arguments*
 

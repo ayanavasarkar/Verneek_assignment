@@ -16,10 +16,14 @@ parser = argparse.ArgumentParser(description='Process some integers.')
 
 parser.add_argument('--train_data', type=str, default='data/train_data.dat', help='path to training data')
 parser.add_argument('--test_data', type=str, default='data/test_data.dat',help='path to test data')
-parser.add_argument('--test', type=bool, default=True, help='Test or not')
+parser.add_argument('--test', type=str, help='Test or not')
 parser.add_argument('--n_users', type=int, default=5551,help='#Users')
 parser.add_argument('--a_train', type=int, default=13584,help='#Articles train')
 parser.add_argument('--a_test', type=int, default=1584,help='#Articles test/Eval')
+parser.add_argument('--lr', type=float, default=0.05, help='Learning rate')
+parser.add_argument('--dr', type=float, default=0.5, help='Dropout rate')
+parser.add_argument('--epoch', type=int, default=100, help='#Epochs')
+parser.add_argument('--bs', type=int, default=256, help='Batch Size')
 
 
 args = parser.parse_args()
@@ -70,24 +74,26 @@ def load_user_article_likes(path,  num_users, num_articles):
     return user_items
 
 
-if args.test == False:
+## Load the Train and Test Data
+if args.test == 'False':
     rating_matrix = load_user_article_likes(args.train_data, args.n_users, args.a_train)
-    rating_matrix_test = load_user_article_likes(args.train_data, args.n_users, args.a_train)[:, 0:1000]
+    rating_matrix_test = load_user_article_likes(args.train_data, args.n_users, args.a_test)[:, 0:1000]
 else:
     rating_matrix = load_user_article_likes(args.train_data, args.n_users, args.a_train)
     rating_matrix_test = load_user_article_likes(args.test_data, args.n_users, args.a_test)
 
 print(len(rating_matrix_test[0]), type(rating_matrix_test[:,0]))
-# exit(0)
 
+## Add Mask
 def mask(c ,size):
     return np.random.binomial(1, 1 - c, [size[0],size[1]])
 
+## Add noise
 def add_noise(x, c):
     x *= mask(c, x.shape)
     return x
 
-
+## Evaluation Criteria
 def recall_at_m(test_data_mat, prediction_mat, M=50) -> float:
     """
     Calculate recall at M metric. This metric calculates the top M article
@@ -141,6 +147,7 @@ def recall_at_m(test_data_mat, prediction_mat, M=50) -> float:
 # * https://github.com/xiaoouzhang/Collaborative-Deep-Learning-for-Recommender-Systems
 # * https://github.com/ChenBoSyun/implement-Collaborative-Deep-Learning-for-Recommender-Systems/blob/master/CDL_tf.ipynb
 
+## Collaborative Deep LEarning
 class CDL():
     def __init__(self, rating_matrix, rating_matrix_test, item_infomation_matrix):
 
@@ -156,7 +163,7 @@ class CDL():
 
         self.drop_ratio = 0.1
         self.learning_rate = 0.05
-        self.epochs = 2
+        self.epochs = 50
         self.batch_size = 256
 
         self.a = 1
@@ -374,7 +381,7 @@ print(len(R), len(R[0]), len(R_), len(R_[0]), len(rating_matrix_test))
 #         print(i)
 ## Print the scores
 print("Computation of m-recall scores for training data")
-print("Recall at m-recall for Train Data = ", recall_at_m(rating_matrix, R))
+# print("Recall at m-recall for Train Data = ", recall_at_m(rating_matrix, R))
 
 print("\n")
 
